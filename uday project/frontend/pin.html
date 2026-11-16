@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Simulation System - Enter PIN</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="atm-machine">
+    <!-- Header -->
+    <header class="atm-header">
+        <div class="brand-title">
+            <div class="brand-icon">🏦</div>
+            <div class="brand-text">
+                <h1>GLOBAL DIGITAL BANK</h1>
+                <p>24/7 ATM SIMULATION TERMINAL</p>
+            </div>
+        </div>
+        <div class="live-indicator">
+            <span class="status-dot"></span>
+            <span id="live-clock">12:00:00 PM</span>
+        </div>
+    </header>
+
+    <!-- Main Kiosk Body -->
+    <div class="atm-body">
+        <!-- Interactive Screen -->
+        <main class="screen-frame">
+            <div class="screen-top-info">
+                <span>CARD DETECTED</span>
+                <span id="masked-card-display">CARD: ************</span>
+            </div>
+
+            <div class="screen-content">
+                <div style="font-size: 40px; margin-bottom: 8px;">🔒</div>
+                <h2 class="screen-title">ENTER YOUR 4-DIGIT PIN</h2>
+                <p class="screen-subtitle">Please shield the keypad for your security</p>
+
+                <!-- Visual PIN Boxes -->
+                <div class="pin-display-boxes">
+                    <div class="pin-digit-box" id="box-0"></div>
+                    <div class="pin-digit-box" id="box-1"></div>
+                    <div class="pin-digit-box" id="box-2"></div>
+                    <div class="pin-digit-box" id="box-3"></div>
+                </div>
+
+                <input type="password" id="pin-input" class="atm-input" maxlength="4" style="opacity: 0; position: absolute; pointer-events: none;" autofocus>
+
+                <div id="alert-message" class="alert-box"></div>
+
+                <div style="display: flex; gap: 12px; width: 100%; max-width: 340px; margin-top: 15px;">
+                    <button class="atm-btn atm-btn-secondary" style="flex: 1;" onclick="ejectCard()">
+                        ✕ EJECT CARD
+                    </button>
+                    <button id="verify-pin-btn" class="atm-btn atm-btn-primary submit-action-btn" style="flex: 1;">
+                        VERIFY PIN ➔
+                    </button>
+                </div>
+            </div>
+
+            <div class="screen-top-info" style="border-top: 1px dashed rgba(56, 189, 248, 0.3); border-bottom: none; margin-top: 20px; padding-top: 10px;">
+                <span>MAX 3 ATTEMPTS ALLOWED</span>
+                <span>NEVER SHARE YOUR PIN</span>
+            </div>
+        </main>
+
+        <!-- Hardware Keypad -->
+        <aside class="hardware-panel">
+            <div class="hardware-slot">
+                <div class="slot-label">
+                    <span>CARD INSERTED</span>
+                    <span style="color: #38bdf8;">LOCKED IN READER</span>
+                </div>
+                <div class="card-mouth" style="border-color: #38bdf8;"></div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 8px;">
+                    💡 Default test PINs: <strong>1234</strong> or <strong>4321</strong> or <strong>9999</strong>
+                </div>
+            </div>
+
+            <div class="keypad-container">
+                <div class="slot-label" style="margin-bottom: 10px;">
+                    <span>ATM PINPAD</span>
+                    <span style="color: #38bdf8;">ACTIVE</span>
+                </div>
+                <div class="keypad-grid">
+                    <button class="key-btn" data-key="1">1</button>
+                    <button class="key-btn" data-key="2">2</button>
+                    <button class="key-btn" data-key="3">3</button>
+
+                    <button class="key-btn" data-key="4">4</button>
+                    <button class="key-btn" data-key="5">5</button>
+                    <button class="key-btn" data-key="6">6</button>
+
+                    <button class="key-btn" data-key="7">7</button>
+                    <button class="key-btn" data-key="8">8</button>
+                    <button class="key-btn" data-key="9">9</button>
+
+                    <button class="key-btn key-action-cancel" data-key="CANCEL">CANCEL</button>
+                    <button class="key-btn" data-key="0">0</button>
+                    <button class="key-btn key-action-clear" data-key="CLEAR">CLEAR</button>
+                </div>
+                <button class="key-btn key-action-enter" data-key="ENTER" style="width: 100%; margin-top: 10px; height: 42px;">
+                    ENTER / SUBMIT
+                </button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+    const currentCard = sessionStorage.getItem('atm_card');
+    if (!currentCard) {
+        window.location.href = 'index.html';
+    } else {
+        const masked = currentCard.slice(0, 4) + ' •••• •••• ' + currentCard.slice(-4);
+        document.getElementById('masked-card-display').textContent = masked;
+    }
+
+    const pinInput = document.getElementById('pin-input');
+    const boxes = [
+        document.getElementById('box-0'),
+        document.getElementById('box-1'),
+        document.getElementById('box-2'),
+        document.getElementById('box-3')
+    ];
+
+    // Focus input automatically
+    document.addEventListener('click', () => pinInput.focus());
+    pinInput.focus();
+
+    pinInput.addEventListener('input', () => {
+        const val = pinInput.value.replace(/\D/g, '');
+        pinInput.value = val;
+
+        for (let i = 0; i < 4; i++) {
+            if (i < val.length) {
+                boxes[i].textContent = '●';
+                boxes[i].classList.add('filled');
+            } else {
+                boxes[i].textContent = '';
+                boxes[i].classList.remove('filled');
+            }
+        }
+
+        // Auto submit if 4 digits entered
+        if (val.length === 4) {
+            verifyPin();
+        }
+    });
+
+    document.getElementById('verify-pin-btn').addEventListener('click', verifyPin);
+
+    async function verifyPin() {
+        const pin = pinInput.value.trim();
+        if (pin.length !== 4) {
+            showAlert('Please enter full 4-digit PIN.', true);
+            return;
+        }
+
+        showAlert('Authenticating with Bank...', false);
+
+        try {
+            const res = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cardNumber: currentCard, pin: pin })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                AtmSession.setSession(currentCard, pin, data);
+                showAlert('Login successful! Loading menu...', false);
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 600);
+            } else {
+                showAlert(data.message || 'Incorrect PIN. Please try again.', true);
+                pinInput.value = '';
+                pinInput.dispatchEvent(new Event('input'));
+            }
+        } catch (err) {
+            // If backend is not started yet, offer seamless demo mode
+            console.warn('Backend API unreachable, using client offline verification mode:', err);
+            // Default demo credentials
+            if (pin === '1234' || pin === '4321' || pin === '9999') {
+                AtmSession.setSession(currentCard, pin, {
+                    account: {
+                        userName: currentCard.endsWith('3456') ? 'Uday Kumar' : (currentCard.endsWith('7654') ? 'Alice Smith' : 'John Doe'),
+                        balance: currentCard.endsWith('3456') ? 50000 : (currentCard.endsWith('7654') ? 25000 : 120000),
+                        accountNumber: 'ACC100023456',
+                        accountType: 'SAVINGS'
+                    }
+                });
+                window.location.href = 'dashboard.html';
+            } else {
+                showAlert('Authentication failed. Incorrect PIN.', true);
+                pinInput.value = '';
+                pinInput.dispatchEvent(new Event('input'));
+            }
+        }
+    }
+</script>
+</body>
+</html>

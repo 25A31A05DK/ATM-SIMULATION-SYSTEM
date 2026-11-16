@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Simulation System - Change PIN</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="atm-machine">
+    <!-- Header -->
+    <header class="atm-header">
+        <div class="brand-title">
+            <div class="brand-icon">🏦</div>
+            <div class="brand-text">
+                <h1>GLOBAL DIGITAL BANK</h1>
+                <p>24/7 ATM SIMULATION TERMINAL</p>
+            </div>
+        </div>
+        <div class="live-indicator">
+            <span class="status-dot"></span>
+            <span id="live-clock">12:00:00 PM</span>
+        </div>
+    </header>
+
+    <div class="atm-body">
+        <main class="screen-frame">
+            <div class="screen-top-info">
+                <span>SECURITY OPERATION: PIN GENERATION</span>
+                <span>AUTHENTICATED</span>
+            </div>
+
+            <div class="screen-content">
+                <h2 class="screen-title">CHANGE ATM PIN</h2>
+                <p class="screen-subtitle">Choose a strong 4-digit PIN that is difficult to guess</p>
+
+                <div class="input-group">
+                    <label class="input-label" for="old-pin-input">Current PIN</label>
+                    <input type="password" id="old-pin-input" class="atm-input" maxlength="4" placeholder="••••">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label" for="new-pin-input">Enter New 4-Digit PIN</label>
+                    <input type="password" id="new-pin-input" class="atm-input" maxlength="4" placeholder="••••">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label" for="confirm-pin-input">Confirm New PIN</label>
+                    <input type="password" id="confirm-pin-input" class="atm-input" maxlength="4" placeholder="••••">
+                </div>
+
+                <div id="alert-message" class="alert-box"></div>
+
+                <div style="display: flex; gap: 12px; width: 100%; max-width: 340px; margin-top: 10px;">
+                    <a href="dashboard.html" class="atm-btn atm-btn-secondary" style="flex: 1;">
+                        ✕ CANCEL
+                    </a>
+                    <button id="update-pin-btn" class="atm-btn atm-btn-primary submit-action-btn" style="flex: 1.3;">
+                        🔑 UPDATE PIN
+                    </button>
+                </div>
+            </div>
+
+            <div class="screen-top-info" style="border-top: 1px dashed rgba(56, 189, 248, 0.3); border-bottom: none; margin-top: 10px; padding-top: 8px;">
+                <span>AVOID BIRTH YEARS & SEQUENCES (1234)</span>
+                <span>CHIP VERIFIED</span>
+            </div>
+        </main>
+
+        <!-- Hardware Keypad -->
+        <aside class="hardware-panel">
+            <div class="hardware-slot">
+                <div class="slot-label">
+                    <span>SECURITY ENCRYPTION</span>
+                    <span style="color: #38bdf8;">ACTIVE (DES/3DES)</span>
+                </div>
+                <div class="card-mouth" style="border-color: #38bdf8;"></div>
+            </div>
+
+            <div class="keypad-container">
+                <div class="slot-label" style="margin-bottom: 10px;">
+                    <span>ATM PINPAD</span>
+                    <span style="color: #38bdf8;">ACTIVE</span>
+                </div>
+                <div class="keypad-grid">
+                    <button class="key-btn" data-key="1">1</button>
+                    <button class="key-btn" data-key="2">2</button>
+                    <button class="key-btn" data-key="3">3</button>
+
+                    <button class="key-btn" data-key="4">4</button>
+                    <button class="key-btn" data-key="5">5</button>
+                    <button class="key-btn" data-key="6">6</button>
+
+                    <button class="key-btn" data-key="7">7</button>
+                    <button class="key-btn" data-key="8">8</button>
+                    <button class="key-btn" data-key="9">9</button>
+
+                    <button class="key-btn key-action-cancel" data-key="CANCEL">CANCEL</button>
+                    <button class="key-btn" data-key="0">0</button>
+                    <button class="key-btn key-action-clear" data-key="CLEAR">CLEAR</button>
+                </div>
+                <button class="key-btn key-action-enter" data-key="ENTER" style="width: 100%; margin-top: 10px; height: 42px;">
+                    CONFIRM
+                </button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+    AtmSession.requireAuth();
+
+    document.getElementById('update-pin-btn').addEventListener('click', updatePin);
+
+    async function updatePin() {
+        const oldPin = document.getElementById('old-pin-input').value.trim();
+        const newPin = document.getElementById('new-pin-input').value.trim();
+        const confirmPin = document.getElementById('confirm-pin-input').value.trim();
+
+        if (oldPin.length !== 4) {
+            showAlert('Please enter your current 4-digit PIN.', true);
+            return;
+        }
+
+        if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+            showAlert('New PIN must be exactly 4 digits.', true);
+            return;
+        }
+
+        if (newPin === oldPin) {
+            showAlert('New PIN cannot be identical to your old PIN.', true);
+            return;
+        }
+
+        if (newPin !== confirmPin) {
+            showAlert('New PIN and Confirm PIN do not match.', true);
+            return;
+        }
+
+        showAlert('Updating PIN securely with bank server...', false);
+
+        try {
+            const res = await fetch(`${API_BASE}/atm/change-pin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cardNumber: AtmSession.getCard(),
+                    pin: oldPin,
+                    newPin: newPin
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                sessionStorage.setItem('atm_pin', newPin);
+                showAlert('PIN successfully changed! Please remember your new PIN.', false);
+                playKeyBeep(1100);
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+            } else {
+                showAlert(data.message || 'Failed to change PIN.', true);
+            }
+        } catch (e) {
+            // Client fallback if offline
+            sessionStorage.setItem('atm_pin', newPin);
+            showAlert('PIN successfully updated in offline simulation mode!', false);
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1500);
+        }
+    }
+</script>
+</body>
+</html>

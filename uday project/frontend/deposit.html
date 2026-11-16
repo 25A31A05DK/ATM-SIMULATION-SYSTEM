@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Simulation System - Cash Deposit</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="atm-machine">
+    <!-- Header -->
+    <header class="atm-header">
+        <div class="brand-title">
+            <div class="brand-icon">🏦</div>
+            <div class="brand-text">
+                <h1>GLOBAL DIGITAL BANK</h1>
+                <p>24/7 ATM SIMULATION TERMINAL</p>
+            </div>
+        </div>
+        <div class="live-indicator">
+            <span class="status-dot"></span>
+            <span id="live-clock">12:00:00 PM</span>
+        </div>
+    </header>
+
+    <div class="atm-body">
+        <main class="screen-frame">
+            <div class="screen-top-info">
+                <span>TRANSACTION: CASH DEPOSIT</span>
+                <span>ACCOUNT: <strong id="acc-num-display">ACC100023456</strong></span>
+            </div>
+
+            <div class="screen-content">
+                <h2 class="screen-title">INSTANT CASH DEPOSIT</h2>
+                <p class="screen-subtitle">Insert clean unfolded currency notes into the deposit slot</p>
+
+                <!-- Quick Presets -->
+                <div class="fast-cash-grid">
+                    <button class="cash-pill" onclick="setAmount(1000)">+ ₹ 1,000</button>
+                    <button class="cash-pill" onclick="setAmount(2000)">+ ₹ 2,000</button>
+                    <button class="cash-pill" onclick="setAmount(5000)">+ ₹ 5,000</button>
+                    <button class="cash-pill" onclick="setAmount(10000)">+ ₹ 10,000</button>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label" for="deposit-input">Deposit Amount (₹)</label>
+                    <input type="number" id="deposit-input" class="atm-input" placeholder="e.g. 5000" step="100" min="100">
+                </div>
+
+                <div id="alert-message" class="alert-box"></div>
+
+                <div style="display: flex; gap: 12px; width: 100%; max-width: 340px; margin-top: 10px;">
+                    <a href="dashboard.html" class="atm-btn atm-btn-secondary" style="flex: 1;">
+                        ✕ CANCEL
+                    </a>
+                    <button id="deposit-btn" class="atm-btn atm-btn-primary submit-action-btn" style="flex: 1.3;">
+                        📥 DEPOSIT CASH
+                    </button>
+                </div>
+            </div>
+
+            <div class="screen-top-info" style="border-top: 1px dashed rgba(56, 189, 248, 0.3); border-bottom: none; margin-top: 10px; padding-top: 8px;">
+                <span>ACCEPTED NOTES: ₹100, ₹200, ₹500</span>
+                <span>INSTANT CREDIT</span>
+            </div>
+        </main>
+
+        <!-- Hardware Keypad -->
+        <aside class="hardware-panel">
+            <div class="hardware-slot">
+                <div class="slot-label">
+                    <span>CASH ACCEPTOR SLOT</span>
+                    <span id="acceptor-status" style="color: #22c55e;">READY FOR BILLS</span>
+                </div>
+                <div class="dispenser-slot" id="acceptor-slot" style="border-color: #22c55e;"></div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">
+                    Place currency neatly in tray
+                </div>
+            </div>
+
+            <div class="keypad-container">
+                <div class="slot-label" style="margin-bottom: 10px;">
+                    <span>ATM PINPAD</span>
+                    <span style="color: #38bdf8;">ACTIVE</span>
+                </div>
+                <div class="keypad-grid">
+                    <button class="key-btn" data-key="1">1</button>
+                    <button class="key-btn" data-key="2">2</button>
+                    <button class="key-btn" data-key="3">3</button>
+
+                    <button class="key-btn" data-key="4">4</button>
+                    <button class="key-btn" data-key="5">5</button>
+                    <button class="key-btn" data-key="6">6</button>
+
+                    <button class="key-btn" data-key="7">7</button>
+                    <button class="key-btn" data-key="8">8</button>
+                    <button class="key-btn" data-key="9">9</button>
+
+                    <button class="key-btn key-action-cancel" data-key="CANCEL">CANCEL</button>
+                    <button class="key-btn" data-key="0">0</button>
+                    <button class="key-btn key-action-clear" data-key="CLEAR">CLEAR</button>
+                </div>
+                <button class="key-btn key-action-enter" data-key="ENTER" style="width: 100%; margin-top: 10px; height: 42px;">
+                    CONFIRM
+                </button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+    AtmSession.requireAuth();
+
+    document.getElementById('acc-num-display').textContent = AtmSession.getAccNumber();
+    const depositInput = document.getElementById('deposit-input');
+
+    function setAmount(val) {
+        depositInput.value = val;
+        playKeyBeep(850);
+    }
+
+    document.getElementById('deposit-btn').addEventListener('click', performDeposit);
+
+    async function performDeposit() {
+        const amount = parseFloat(depositInput.value);
+        if (isNaN(amount) || amount <= 0) {
+            showAlert('Please enter a valid deposit amount.', true);
+            return;
+        }
+
+        if (amount % 100 !== 0) {
+            showAlert('Amount must be in valid note denominations (multiples of ₹100).', true);
+            return;
+        }
+
+        showAlert('Validating and counting currency notes...', false);
+
+        const statusEl = document.getElementById('acceptor-status');
+        statusEl.textContent = 'COUNTING...';
+        statusEl.style.color = '#f59e0b';
+
+        try {
+            const res = await fetch(`${API_BASE}/atm/deposit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cardNumber: AtmSession.getCard(),
+                    pin: AtmSession.getPin(),
+                    amount: amount
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                handleDepositSuccess(amount, data.balance);
+            } else {
+                statusEl.textContent = 'ERROR';
+                statusEl.style.color = '#ef4444';
+                showAlert(data.message || 'Deposit failed.', true);
+            }
+        } catch (err) {
+            // Client fallback if backend is offline
+            const currentBal = parseFloat(AtmSession.getBalance());
+            const newBal = currentBal + amount;
+            handleDepositSuccess(amount, newBal);
+        }
+    }
+
+    function handleDepositSuccess(amount, newBal) {
+        AtmSession.updateBalance(newBal);
+
+        const statusEl = document.getElementById('acceptor-status');
+        statusEl.textContent = 'CREDITED';
+        statusEl.style.color = '#22c55e';
+
+        showAlert(`Deposit of ₹${amount.toLocaleString('en-IN')} successful! New Balance: ₹${parseFloat(newBal).toFixed(2)}`, false);
+        depositInput.value = '';
+        playKeyBeep(1100);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Simulation System - Cash Withdrawal</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="atm-machine">
+    <!-- Header -->
+    <header class="atm-header">
+        <div class="brand-title">
+            <div class="brand-icon">🏦</div>
+            <div class="brand-text">
+                <h1>GLOBAL DIGITAL BANK</h1>
+                <p>24/7 ATM SIMULATION TERMINAL</p>
+            </div>
+        </div>
+        <div class="live-indicator">
+            <span class="status-dot"></span>
+            <span id="live-clock">12:00:00 PM</span>
+        </div>
+    </header>
+
+    <div class="atm-body">
+        <main class="screen-frame">
+            <div class="screen-top-info">
+                <span>TRANSACTION: CASH WITHDRAWAL</span>
+                <span>AVAIL BAL: <strong id="balance-header">₹ 0.00</strong></span>
+            </div>
+
+            <div class="screen-content">
+                <h2 class="screen-title">FAST CASH & WITHDRAWAL</h2>
+                <p class="screen-subtitle">Select a quick amount or enter a custom amount (multiples of ₹100)</p>
+
+                <!-- Quick Presets -->
+                <div class="fast-cash-grid">
+                    <button class="cash-pill" onclick="setAmount(500)">₹ 500</button>
+                    <button class="cash-pill" onclick="setAmount(1000)">₹ 1,000</button>
+                    <button class="cash-pill" onclick="setAmount(2000)">₹ 2,000</button>
+                    <button class="cash-pill" onclick="setAmount(5000)">₹ 5,000</button>
+                </div>
+
+                <!-- Custom Amount Input -->
+                <div class="input-group">
+                    <label class="input-label" for="amount-input">Custom Withdrawal Amount (₹)</label>
+                    <input type="number" id="amount-input" class="atm-input" placeholder="e.g. 2500" step="100" min="100">
+                </div>
+
+                <div id="alert-message" class="alert-box"></div>
+
+                <div style="display: flex; gap: 12px; width: 100%; max-width: 340px; margin-top: 10px;">
+                    <a href="dashboard.html" class="atm-btn atm-btn-secondary" style="flex: 1;">
+                        ✕ CANCEL
+                    </a>
+                    <button id="withdraw-btn" class="atm-btn atm-btn-primary submit-action-btn" style="flex: 1.3;">
+                        💵 WITHDRAW CASH
+                    </button>
+                </div>
+            </div>
+
+            <div class="screen-top-info" style="border-top: 1px dashed rgba(56, 189, 248, 0.3); border-bottom: none; margin-top: 10px; padding-top: 8px;">
+                <span>DENOMINATIONS: ₹100, ₹200, ₹500</span>
+                <span>MAX DAILY: ₹40,000</span>
+            </div>
+        </main>
+
+        <!-- Hardware Keypad -->
+        <aside class="hardware-panel">
+            <!-- Cash Dispenser with live state -->
+            <div class="hardware-slot">
+                <div class="slot-label">
+                    <span>CASH DISPENSER</span>
+                    <span id="dispenser-status" style="color: #64748b;">STANDBY</span>
+                </div>
+                <div class="dispenser-slot" id="dispenser-slot"></div>
+                <div id="dispenser-note" style="font-size: 11px; color: #94a3b8; margin-top: 6px;">
+                    Cash will be presented here
+                </div>
+            </div>
+
+            <div class="keypad-container">
+                <div class="slot-label" style="margin-bottom: 10px;">
+                    <span>ATM PINPAD</span>
+                    <span style="color: #38bdf8;">ACTIVE</span>
+                </div>
+                <div class="keypad-grid">
+                    <button class="key-btn" data-key="1">1</button>
+                    <button class="key-btn" data-key="2">2</button>
+                    <button class="key-btn" data-key="3">3</button>
+
+                    <button class="key-btn" data-key="4">4</button>
+                    <button class="key-btn" data-key="5">5</button>
+                    <button class="key-btn" data-key="6">6</button>
+
+                    <button class="key-btn" data-key="7">7</button>
+                    <button class="key-btn" data-key="8">8</button>
+                    <button class="key-btn" data-key="9">9</button>
+
+                    <button class="key-btn key-action-cancel" data-key="CANCEL">CANCEL</button>
+                    <button class="key-btn" data-key="0">0</button>
+                    <button class="key-btn key-action-clear" data-key="CLEAR">CLEAR</button>
+                </div>
+                <button class="key-btn key-action-enter" data-key="ENTER" style="width: 100%; margin-top: 10px; height: 42px;">
+                    CONFIRM
+                </button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+    AtmSession.requireAuth();
+
+    function updateBalanceHeader() {
+        const bal = parseFloat(AtmSession.getBalance()).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        document.getElementById('balance-header').textContent = '₹ ' + bal;
+    }
+    updateBalanceHeader();
+
+    const amountInput = document.getElementById('amount-input');
+
+    function setAmount(val) {
+        amountInput.value = val;
+        playKeyBeep(850);
+    }
+
+    document.getElementById('withdraw-btn').addEventListener('click', performWithdrawal);
+
+    async function performWithdrawal() {
+        const amount = parseFloat(amountInput.value);
+        if (isNaN(amount) || amount <= 0) {
+            showAlert('Please select or enter a valid amount.', true);
+            return;
+        }
+
+        if (amount % 100 !== 0) {
+            showAlert('Amount must be a multiple of ₹100.', true);
+            return;
+        }
+
+        const currentBal = parseFloat(AtmSession.getBalance());
+        if (amount > currentBal) {
+            showAlert(`Insufficient balance! Your current balance is ₹${currentBal.toFixed(2)}.`, true);
+            return;
+        }
+
+        showAlert('Processing transaction... Please wait.', false);
+
+        // Animate Cash Dispenser
+        const dispenserStatus = document.getElementById('dispenser-status');
+        const dispenserSlot = document.getElementById('dispenser-slot');
+        const dispenserNote = document.getElementById('dispenser-note');
+
+        dispenserStatus.textContent = 'COUNTING BILLS...';
+        dispenserStatus.style.color = '#f59e0b';
+
+        try {
+            const res = await fetch(`${API_BASE}/atm/withdraw`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cardNumber: AtmSession.getCard(),
+                    pin: AtmSession.getPin(),
+                    amount: amount
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                handleSuccess(amount, data.balance);
+            } else {
+                dispenserStatus.textContent = 'ERROR';
+                dispenserStatus.style.color = '#ef4444';
+                showAlert(data.message || 'Transaction failed.', true);
+            }
+        } catch (err) {
+            // Client fallback if backend is offline
+            const newBal = currentBal - amount;
+            handleSuccess(amount, newBal);
+        }
+    }
+
+    function handleSuccess(amount, newBal) {
+        AtmSession.updateBalance(newBal);
+        updateBalanceHeader();
+
+        const dispenserStatus = document.getElementById('dispenser-status');
+        const dispenserSlot = document.getElementById('dispenser-slot');
+        const dispenserNote = document.getElementById('dispenser-note');
+
+        dispenserStatus.textContent = 'DISPENSING CASH';
+        dispenserStatus.style.color = '#22c55e';
+        dispenserSlot.style.borderColor = '#22c55e';
+        dispenserSlot.style.boxShadow = '0 0 15px #22c55e';
+        dispenserNote.innerHTML = `💵 <strong>₹${amount.toLocaleString('en-IN')}</strong> ready! Please collect.`;
+
+        showAlert(`Success! Please collect your cash ₹${amount.toLocaleString('en-IN')}. Remaining Balance: ₹${parseFloat(newBal).toFixed(2)}`, false);
+        amountInput.value = '';
+
+        playKeyBeep(1000);
+    }
+</script>
+</body>
+</html>

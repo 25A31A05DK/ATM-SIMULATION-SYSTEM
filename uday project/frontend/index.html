@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Simulation System - Welcome</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="atm-machine">
+    <!-- Header -->
+    <header class="atm-header">
+        <div class="brand-title">
+            <div class="brand-icon">🏦</div>
+            <div class="brand-text">
+                <h1>GLOBAL DIGITAL BANK</h1>
+                <p>24/7 ATM SIMULATION TERMINAL</p>
+            </div>
+        </div>
+        <div class="live-indicator">
+            <span class="status-dot"></span>
+            <span id="live-clock">12:00:00 PM</span>
+        </div>
+    </header>
+
+    <!-- Main Kiosk Body -->
+    <div class="atm-body">
+        <!-- Interactive Screen -->
+        <main class="screen-frame">
+            <div class="screen-top-info">
+                <span>TERMINAL ID: #ATM-HYD-042</span>
+                <span>STATUS: READY</span>
+            </div>
+
+            <div class="screen-content">
+                <div style="font-size: 48px; margin-bottom: 12px;">💳</div>
+                <h2 class="screen-title">WELCOME TO ATM</h2>
+                <p class="screen-subtitle">Please insert your card or enter your 16-digit card number below</p>
+
+                <div class="input-group">
+                    <label class="input-label" for="card-input">ATM Card Number</label>
+                    <input type="text" id="card-input" class="atm-input" placeholder="XXXX XXXX XXXX XXXX" maxlength="19" autofocus>
+                </div>
+
+                <div id="alert-message" class="alert-box"></div>
+
+                <button id="insert-card-btn" class="atm-btn atm-btn-primary atm-btn-full submit-action-btn">
+                    <span>INSERT CARD & NEXT ➔</span>
+                </button>
+            </div>
+
+            <div class="screen-top-info" style="border-top: 1px dashed rgba(56, 189, 248, 0.3); border-bottom: none; margin-top: 20px; padding-top: 10px;">
+                <span>LOCK EMV CHIP SECURED</span>
+                <span>256-BIT ENCRYPTION</span>
+            </div>
+        </main>
+
+        <!-- ATM Hardware Panel -->
+        <aside class="hardware-panel">
+            <!-- Card Slot -->
+            <div class="hardware-slot">
+                <div class="slot-label">
+                    <span>CARD READER SLOT</span>
+                    <span style="color: #22c55e;">● READY</span>
+                </div>
+                <div class="card-mouth"></div>
+                
+                <!-- Quick Demo Cards -->
+                <div class="quick-cards">
+                    <div style="font-size: 10px; color: #94a3b8; margin: 8px 0 4px 0; text-transform: uppercase;">
+                        ⚡ Quick Demo Cards:
+                    </div>
+                    <button class="quick-card-btn" onclick="fillCard('1234567890123456')">
+                        💳 <strong>1234...3456</strong> (Uday Kumar - ₹50,000)
+                    </button>
+                    <button class="quick-card-btn" onclick="fillCard('9876543210987654')">
+                        💳 <strong>9876...7654</strong> (Alice Smith - ₹25,000)
+                    </button>
+                    <button class="quick-card-btn" onclick="fillCard('1111222233334444')">
+                        💳 <strong>1111...4444</strong> (John Doe - ₹120,000)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tactile Keypad -->
+            <div class="keypad-container">
+                <div class="slot-label" style="margin-bottom: 10px;">
+                    <span>ATM PINPAD</span>
+                    <span style="color: #38bdf8;">SECURE</span>
+                </div>
+                <div class="keypad-grid">
+                    <button class="key-btn" data-key="1">1</button>
+                    <button class="key-btn" data-key="2">2</button>
+                    <button class="key-btn" data-key="3">3</button>
+
+                    <button class="key-btn" data-key="4">4</button>
+                    <button class="key-btn" data-key="5">5</button>
+                    <button class="key-btn" data-key="6">6</button>
+
+                    <button class="key-btn" data-key="7">7</button>
+                    <button class="key-btn" data-key="8">8</button>
+                    <button class="key-btn" data-key="9">9</button>
+
+                    <button class="key-btn key-action-cancel" data-key="CANCEL">CANCEL</button>
+                    <button class="key-btn" data-key="0">0</button>
+                    <button class="key-btn key-action-clear" data-key="CLEAR">CLEAR</button>
+                </div>
+                <button class="key-btn key-action-enter" data-key="ENTER" style="width: 100%; margin-top: 10px; height: 42px;">
+                    ENTER / CONFIRM
+                </button>
+            </div>
+
+            <!-- Cash Slot -->
+            <div class="hardware-slot">
+                <div class="slot-label">
+                    <span>CASH DISPENSER</span>
+                    <span style="color: #64748b;">SHUTTER CLOSED</span>
+                </div>
+                <div class="dispenser-slot"></div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+    function fillCard(number) {
+        document.getElementById('card-input').value = number;
+    }
+
+    // Format card number with spaces as typed
+    const cardInput = document.getElementById('card-input');
+    cardInput.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 16) val = val.substring(0, 16);
+        e.target.value = val;
+    });
+
+    document.getElementById('insert-card-btn').addEventListener('click', () => {
+        const rawCard = cardInput.value.replace(/\s+/g, '');
+        if (!rawCard || rawCard.length < 12) {
+            showAlert('Please enter a valid 16-digit card number!', true);
+            return;
+        }
+
+        // Save card number temporarily and proceed to PIN entry
+        sessionStorage.setItem('atm_card', rawCard);
+        window.location.href = 'pin.html';
+    });
+</script>
+</body>
+</html>

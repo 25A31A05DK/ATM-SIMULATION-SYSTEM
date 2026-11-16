@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Simulation System - Main Menu</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="atm-machine">
+    <!-- Header -->
+    <header class="atm-header">
+        <div class="brand-title">
+            <div class="brand-icon">🏦</div>
+            <div class="brand-text">
+                <h1>GLOBAL DIGITAL BANK</h1>
+                <p>24/7 ATM SIMULATION TERMINAL</p>
+            </div>
+        </div>
+        <div class="live-indicator">
+            <span class="status-dot"></span>
+            <span id="live-clock">12:00:00 PM</span>
+        </div>
+    </header>
+
+    <!-- Main Kiosk Body -->
+    <div class="atm-body">
+        <!-- Interactive Screen -->
+        <main class="screen-frame">
+            <div class="screen-top-info">
+                <span>USER: <strong id="user-name-display">VALUED CUSTOMER</strong></span>
+                <span id="account-type-display">ACC: SAVINGS</span>
+            </div>
+
+            <div class="screen-content" style="justify-content: flex-start; padding-top: 10px;">
+                <h2 class="screen-title" style="font-size: 22px;">SELECT TRANSACTION</h2>
+                <p class="screen-subtitle" style="margin-bottom: 16px;">Please choose an option to continue</p>
+
+                <!-- 6 Major ATM Options -->
+                <div class="menu-grid" style="max-width: 440px;">
+                    <a href="balance.html" class="atm-btn atm-btn-secondary">
+                        <span>💰</span> BALANCE INQUIRY
+                    </a>
+                    <a href="withdraw.html" class="atm-btn atm-btn-primary">
+                        <span>💵</span> CASH WITHDRAWAL
+                    </a>
+                    <a href="deposit.html" class="atm-btn atm-btn-secondary">
+                        <span>📥</span> CASH DEPOSIT
+                    </a>
+                    <a href="statement.html" class="atm-btn atm-btn-secondary">
+                        <span>📜</span> MINI STATEMENT
+                    </a>
+                    <a href="change-pin.html" class="atm-btn atm-btn-secondary">
+                        <span>🔑</span> CHANGE PIN
+                    </a>
+                    <button onclick="ejectCard()" class="atm-btn atm-btn-danger">
+                        <span>✕</span> EXIT & EJECT CARD
+                    </button>
+                </div>
+            </div>
+
+            <div class="screen-top-info" style="border-top: 1px dashed rgba(56, 189, 248, 0.3); border-bottom: none; margin-top: 10px; padding-top: 8px;">
+                <span>CARD: <span id="card-num-short">•••• 3456</span></span>
+                <span>SESSION ENCRYPTED</span>
+            </div>
+        </main>
+
+        <!-- Hardware Keypad -->
+        <aside class="hardware-panel">
+            <div class="hardware-slot">
+                <div class="slot-label">
+                    <span>CARD READER</span>
+                    <span style="color: #38bdf8;">AUTHENTICATED</span>
+                </div>
+                <div class="card-mouth" style="border-color: #38bdf8;"></div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 8px;">
+                    Acc: <span id="acc-num-label" style="color: #f8fafc; font-weight: bold;">ACC100023456</span>
+                </div>
+            </div>
+
+            <div class="keypad-container">
+                <div class="slot-label" style="margin-bottom: 10px;">
+                    <span>ATM PINPAD</span>
+                    <span style="color: #38bdf8;">ACTIVE</span>
+                </div>
+                <div class="keypad-grid">
+                    <button class="key-btn" data-key="1">1</button>
+                    <button class="key-btn" data-key="2">2</button>
+                    <button class="key-btn" data-key="3">3</button>
+
+                    <button class="key-btn" data-key="4">4</button>
+                    <button class="key-btn" data-key="5">5</button>
+                    <button class="key-btn" data-key="6">6</button>
+
+                    <button class="key-btn" data-key="7">7</button>
+                    <button class="key-btn" data-key="8">8</button>
+                    <button class="key-btn" data-key="9">9</button>
+
+                    <button class="key-btn key-action-cancel" data-key="CANCEL" onclick="ejectCard()">CANCEL</button>
+                    <button class="key-btn" data-key="0">0</button>
+                    <button class="key-btn key-action-clear" data-key="CLEAR">CLEAR</button>
+                </div>
+                <button class="key-btn key-action-enter" data-key="ENTER" style="width: 100%; margin-top: 10px; height: 42px;">
+                    SELECT
+                </button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+    AtmSession.requireAuth();
+
+    document.getElementById('user-name-display').textContent = AtmSession.getUserName().toUpperCase();
+    document.getElementById('account-type-display').textContent = 'TYPE: ' + AtmSession.getAccType();
+    document.getElementById('acc-num-label').textContent = AtmSession.getAccNumber();
+
+    const card = AtmSession.getCard() || '0000000000000000';
+    document.getElementById('card-num-short').textContent = '•••• ' + card.slice(-4);
+</script>
+</body>
+</html>

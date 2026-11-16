@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATM Simulation System - Balance Inquiry</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="atm-machine">
+    <!-- Header -->
+    <header class="atm-header">
+        <div class="brand-title">
+            <div class="brand-icon">🏦</div>
+            <div class="brand-text">
+                <h1>GLOBAL DIGITAL BANK</h1>
+                <p>24/7 ATM SIMULATION TERMINAL</p>
+            </div>
+        </div>
+        <div class="live-indicator">
+            <span class="status-dot"></span>
+            <span id="live-clock">12:00:00 PM</span>
+        </div>
+    </header>
+
+    <div class="atm-body">
+        <main class="screen-frame">
+            <div class="screen-top-info">
+                <span>TRANSACTION: BALANCE INQUIRY</span>
+                <span>ACCOUNT: <strong id="acc-num-display">ACC100023456</strong></span>
+            </div>
+
+            <div class="screen-content">
+                <h2 class="screen-title">CURRENT BALANCE</h2>
+                <p class="screen-subtitle">Here is your available account balance details</p>
+
+                <div class="balance-card">
+                    <span style="font-size: 13px; color: #94a3b8; text-transform: uppercase;">Available Balance</span>
+                    <div class="balance-amount" id="balance-display">₹ --.--</div>
+
+                    <div class="balance-meta">
+                        <span>Account Holder: <strong id="user-display">Uday Kumar</strong></span>
+                        <span>Type: <strong id="type-display">SAVINGS</strong></span>
+                    </div>
+                </div>
+
+                <div id="alert-message" class="alert-box"></div>
+
+                <div style="display: flex; gap: 12px; width: 100%; max-width: 400px; margin-top: 15px;">
+                    <a href="dashboard.html" class="atm-btn atm-btn-secondary" style="flex: 1;">
+                        ➔ MAIN MENU
+                    </a>
+                    <button id="print-receipt-btn" class="atm-btn atm-btn-primary" style="flex: 1;">
+                        🖨 PRINT RECEIPT
+                    </button>
+                </div>
+            </div>
+
+            <div class="screen-top-info" style="border-top: 1px dashed rgba(56, 189, 248, 0.3); border-bottom: none; margin-top: 10px; padding-top: 8px;">
+                <span>DO YOU REQUIRE ANOTHER TRANSACTION?</span>
+                <span onclick="ejectCard()" style="cursor: pointer; color: #f87171;">[EJECT CARD]</span>
+            </div>
+        </main>
+
+        <!-- Hardware Keypad -->
+        <aside class="hardware-panel">
+            <div class="hardware-slot">
+                <div class="slot-label">
+                    <span>RECEIPT PRINTER</span>
+                    <span id="receipt-status" style="color: #64748b;">STANDBY</span>
+                </div>
+                <div class="dispenser-slot" id="receipt-slot" style="height: 8px; border-color: #475569;"></div>
+            </div>
+
+            <div class="keypad-container">
+                <div class="slot-label" style="margin-bottom: 10px;">
+                    <span>ATM PINPAD</span>
+                    <span style="color: #38bdf8;">ACTIVE</span>
+                </div>
+                <div class="keypad-grid">
+                    <button class="key-btn" data-key="1">1</button>
+                    <button class="key-btn" data-key="2">2</button>
+                    <button class="key-btn" data-key="3">3</button>
+
+                    <button class="key-btn" data-key="4">4</button>
+                    <button class="key-btn" data-key="5">5</button>
+                    <button class="key-btn" data-key="6">6</button>
+
+                    <button class="key-btn" data-key="7">7</button>
+                    <button class="key-btn" data-key="8">8</button>
+                    <button class="key-btn" data-key="9">9</button>
+
+                    <button class="key-btn key-action-cancel" data-key="CANCEL" onclick="ejectCard()">CANCEL</button>
+                    <button class="key-btn" data-key="0">0</button>
+                    <button class="key-btn key-action-clear" data-key="CLEAR">CLEAR</button>
+                </div>
+                <a href="dashboard.html" class="key-btn key-action-enter" style="width: 100%; margin-top: 10px; height: 42px; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                    MAIN MENU
+                </a>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+    AtmSession.requireAuth();
+
+    document.getElementById('acc-num-display').textContent = AtmSession.getAccNumber();
+    document.getElementById('user-display').textContent = AtmSession.getUserName();
+    document.getElementById('type-display').textContent = AtmSession.getAccType();
+
+    // Fetch live balance from backend
+    async function loadBalance() {
+        try {
+            const res = await fetch(`${API_BASE}/atm/balance`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    cardNumber: AtmSession.getCard(),
+                    pin: AtmSession.getPin()
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const balFormatted = parseFloat(data.balance).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                document.getElementById('balance-display').textContent = '₹ ' + balFormatted;
+                AtmSession.updateBalance(data.balance);
+            } else {
+                fallbackBalance();
+            }
+        } catch (e) {
+            fallbackBalance();
+        }
+    }
+
+    function fallbackBalance() {
+        const bal = parseFloat(AtmSession.getBalance()).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        document.getElementById('balance-display').textContent = '₹ ' + bal;
+    }
+
+    loadBalance();
+
+    document.getElementById('print-receipt-btn').addEventListener('click', () => {
+        const statusEl = document.getElementById('receipt-status');
+        const slotEl = document.getElementById('receipt-slot');
+        statusEl.textContent = 'PRINTING...';
+        statusEl.style.color = '#38bdf8';
+        slotEl.style.borderColor = '#38bdf8';
+
+        playKeyBeep(1200);
+
+        setTimeout(() => {
+            statusEl.textContent = 'RECEIPT READY';
+            statusEl.style.color = '#22c55e';
+            showAlert('Receipt printed successfully! Please take your slip.', false);
+        }, 1200);
+    });
+</script>
+</body>
+</html>
